@@ -16,9 +16,20 @@
 #define DONE mrb_gc_arena_restore(mrb, 0);
 
 // static mrb_value rb_stdscr;
+
 struct windata {
   WINDOW *window;
 };
+
+static void mrb_curses_window_free(mrb_state *mrb, void *ptr) {
+  struct windata *winp = ptr;
+  fprintf(stderr, "curses_window_free %p (stdscr = %p\n", winp->window, stdscr);
+  if (winp->window && winp->window != stdscr) {
+    //    delwin(winp->window);
+  }
+  winp->window = NULL;
+  mrb_free(mrb, ptr);
+}
 
 WINDOW *echo_win = NULL;
 
@@ -29,6 +40,10 @@ typedef struct {
 
 static const struct mrb_data_type mrb_curses_data_type = {
   "mrb_curses_data", mrb_free,
+};
+
+static const struct mrb_data_type mrb_curses_window_data_type = {
+  "mrb_curses_window_data", mrb_curses_window_free,
 };
 
 static mrb_value mrb_curses_init(mrb_state *mrb, mrb_value self)
@@ -279,9 +294,131 @@ mrb_curses_screen_cols(mrb_state *mrb, mrb_value self)
   return mrb_fixnum_value(cols);
 }
 
+static mrb_value
+mrb_curses_stdscr(mrb_state *mrb, mrb_value self)
+{
+  mrb_value win_obj;
+  struct windata *windata;
+  if (stdscr == NULL) {
+    initscr();
+  }
+  windata = (struct windata *)mrb_malloc(mrb, sizeof(struct windata));
+  windata->window = stdscr;
+  win_obj = mrb_obj_value(mrb_data_object_alloc(mrb, mrb_class_get_under(mrb, mrb_class_get(mrb, "Curses"), "Window"), windata, &mrb_curses_window_data_type));
+  return win_obj;
+}
+
+static mrb_value
+mrb_curses_window_init(mrb_state *mrb, mrb_value self)
+{
+  mrb_int nlines, ncols, begin_y, begin_x;
+  struct windata *winp;
+  WINDOW *win;
+
+  winp = (struct windata *)mrb_malloc(mrb, sizeof(struct windata));
+  DATA_TYPE(self) = &mrb_curses_window_data_type;
+  DATA_PTR(self) = NULL;
+
+  mrb_get_args(mrb, "iiii", &nlines, &ncols, &begin_y, &begin_x);
+  win = newwin(nlines, ncols, begin_y, begin_x);
+  winp->window = win;
+  DATA_PTR(self) = winp;
+  return self;
+}
+
+static mrb_value
+mrb_curses_window_resize(mrb_state *mrb, mrb_value self)
+{
+  mrb_int lines, cols, ret;
+  struct windata *winp = DATA_PTR(self);
+
+  mrb_get_args(mrb, "ii", &lines, &cols);
+  ret = wresize(winp->window, lines, cols);
+  if (ret == OK) {
+    return mrb_true_value();
+  } else {
+    return mrb_false_value();
+  }
+}
+
+static mrb_value
+mrb_curses_window_addstr(mrb_state *mrb, mrb_value self)
+{
+  mrb_int ret;
+  char *str;
+  struct windata *winp = DATA_PTR(self);
+
+  mrb_get_args(mrb, "z", &str);
+  ret = waddstr(winp->window, str);
+  if (ret == OK) {
+    return mrb_true_value();
+  } else {
+    return mrb_false_value();
+  }
+}
+
+static mrb_value
+mrb_curses_window_mvwin(mrb_state *mrb, mrb_value self)
+{
+  mrb_int ret, x, y;
+  struct windata *winp = DATA_PTR(self);
+
+  mrb_get_args(mrb, "ii", &y, &x);
+  mvwin(winp->window, y, x);
+  return mrb_nil_value();
+}
+
+static mrb_value
+mrb_curses_window_refresh(mrb_state *mrb, mrb_value self)
+{
+  struct windata *winp = DATA_PTR(self);
+
+  wrefresh(winp->window);
+  return mrb_nil_value();
+}
+
+static mrb_value
+mrb_curses_window_attrset(mrb_state *mrb, mrb_value self)
+{
+  struct windata *winp = DATA_PTR(self);
+  mrb_int attr;
+
+  mrb_get_args(mrb, "i", &attr);
+  return mrb_fixnum_value(wattrset(winp->window, attr));
+}
+
+static mrb_value
+mrb_curses_window_bkgd(mrb_state *mrb, mrb_value self)
+{
+  struct windata *winp = DATA_PTR(self);
+  mrb_int attr;
+
+  mrb_get_args(mrb, "i", &attr);
+  return mrb_fixnum_value(wbkgd(winp->window, attr));
+}
+
+static mrb_value
+mrb_curses_window_clear(mrb_state *mrb, mrb_value self)
+{
+  struct windata *winp = DATA_PTR(self);
+  mrb_int attr;
+
+  return mrb_fixnum_value(wclear(winp->window));
+}
+
+static mrb_value
+mrb_curses_window_move(mrb_state *mrb, mrb_value self)
+{
+  struct windata *winp = DATA_PTR(self);
+  mrb_int ret, x, y;
+
+  mrb_get_args(mrb, "ii", &y, &x);
+  return mrb_fixnum_value(wmove(winp->window, y, x));
+}
+
 void mrb_mruby_curses_gem_init(mrb_state *mrb)
 {
-    struct RClass *curses;
+    struct RClass *curses, *window;
     curses = mrb_define_class(mrb, "Curses", mrb->object_class);
     MRB_SET_INSTANCE_TT(curses, MRB_TT_DATA);
 
@@ -311,6 +448,7 @@ void mrb_mruby_curses_gem_init(mrb_state *mrb)
     mrb_define_class_method(mrb, curses, "screen_rows", mrb_curses_screen_rows, MRB_ARGS_NONE());
     mrb_define_class_method(mrb, curses, "screen_cols", mrb_curses_screen_cols, MRB_ARGS_NONE());
 
+    mrb_define_class_method(mrb, curses, "stdscr", mrb_curses_stdscr, MRB_ARGS_NONE());
     mrb_define_const(mrb, curses, "COLOR_BLACK",  mrb_fixnum_value(COLOR_BLACK));
     mrb_define_const(mrb, curses, "COLOR_RED",  mrb_fixnum_value(COLOR_RED));
     mrb_define_const(mrb, curses, "COLOR_GREEN",  mrb_fixnum_value(COLOR_GREEN));
@@ -319,6 +457,18 @@ void mrb_mruby_curses_gem_init(mrb_state *mrb)
     mrb_define_const(mrb, curses, "COLOR_MAGENTA",  mrb_fixnum_value(COLOR_MAGENTA));
     mrb_define_const(mrb, curses, "COLOR_CYAN",  mrb_fixnum_value(COLOR_CYAN));
     mrb_define_const(mrb, curses, "COLOR_WHITE",  mrb_fixnum_value(COLOR_WHITE));
+
+    window = mrb_define_class_under(mrb, curses, "Window", mrb->object_class);
+    MRB_SET_INSTANCE_TT(window, MRB_TT_DATA);
+    mrb_define_method(mrb, window, "initialize", mrb_curses_window_init, MRB_ARGS_REQ(4));
+    mrb_define_method(mrb, window, "resize", mrb_curses_window_resize, MRB_ARGS_REQ(2));
+    mrb_define_method(mrb, window, "addstr", mrb_curses_window_addstr, MRB_ARGS_REQ(1));
+    mrb_define_method(mrb, window, "mvwin", mrb_curses_window_mvwin, MRB_ARGS_REQ(2));
+    mrb_define_method(mrb, window, "refresh", mrb_curses_window_refresh, MRB_ARGS_NONE());
+    mrb_define_method(mrb, window, "attrset", mrb_curses_window_attrset, MRB_ARGS_REQ(1));
+    mrb_define_method(mrb, window, "bkgd", mrb_curses_window_bkgd, MRB_ARGS_REQ(1));
+    mrb_define_method(mrb, window, "clear", mrb_curses_window_clear, MRB_ARGS_NONE());
+    mrb_define_method(mrb, window, "move", mrb_curses_window_move, MRB_ARGS_REQ(2));
 
     DONE;
 }
