@@ -295,6 +295,41 @@ mrb_curses_screen_cols(mrb_state *mrb, mrb_value self)
 }
 
 static mrb_value
+mrb_curses_raw(mrb_state *mrb, mrb_value self)
+{
+  int ret;
+  ret = raw();
+  return mrb_fixnum_value(ret);
+}
+
+static mrb_value
+mrb_curses_noraw(mrb_state *mrb, mrb_value self)
+{
+  int ret;
+  ret = noraw();
+  return mrb_fixnum_value(ret);
+}
+
+static mrb_value
+mrb_curses_getch(mrb_state *mrb, mrb_value self)
+{
+  int ret;
+  ret = getch();
+  return mrb_fixnum_value(ret);
+}
+
+static mrb_value
+mrb_curses_curs_set(mrb_state *mrb, mrb_value self)
+{
+  int ret;
+  mrb_int visibility;
+
+  mrb_get_args(mrb, "i", &visibility);
+  ret = curs_set(visibility);
+  return mrb_fixnum_value(ret);
+}
+
+static mrb_value
 mrb_curses_stdscr(mrb_state *mrb, mrb_value self)
 {
   mrb_value win_obj;
@@ -306,6 +341,25 @@ mrb_curses_stdscr(mrb_state *mrb, mrb_value self)
   windata->window = stdscr;
   win_obj = mrb_obj_value(mrb_data_object_alloc(mrb, mrb_class_get_under(mrb, mrb_class_get(mrb, "Curses"), "Window"), windata, &mrb_curses_window_data_type));
   return win_obj;
+}
+
+static mrb_value
+mrb_curses_lines(mrb_state *mrb, mrb_value self)
+{
+  return mrb_fixnum_value(LINES);
+}
+
+static mrb_value
+mrb_curses_cols(mrb_state *mrb, mrb_value self)
+{
+  return mrb_fixnum_value(COLS);
+}
+
+static mrb_value
+mrb_curses_use_default_colors(mrb_state *mrb, mrb_value self)
+{
+  use_default_colors();
+  return mrb_nil_value();
 }
 
 static mrb_value
@@ -448,7 +502,16 @@ void mrb_mruby_curses_gem_init(mrb_state *mrb)
     mrb_define_class_method(mrb, curses, "screen_rows", mrb_curses_screen_rows, MRB_ARGS_NONE());
     mrb_define_class_method(mrb, curses, "screen_cols", mrb_curses_screen_cols, MRB_ARGS_NONE());
 
+    mrb_define_class_method(mrb, curses, "raw", mrb_curses_raw, MRB_ARGS_NONE());
+    mrb_define_class_method(mrb, curses, "noraw", mrb_curses_noraw, MRB_ARGS_NONE());
+    mrb_define_class_method(mrb, curses, "getch", mrb_curses_getch, MRB_ARGS_NONE());
+    mrb_define_class_method(mrb, curses, "curs_set", mrb_curses_curs_set, MRB_ARGS_REQ(1));
     mrb_define_class_method(mrb, curses, "stdscr", mrb_curses_stdscr, MRB_ARGS_NONE());
+    mrb_define_class_method(mrb, curses, "lines", mrb_curses_lines, MRB_ARGS_NONE());
+    mrb_define_class_method(mrb, curses, "cols", mrb_curses_cols, MRB_ARGS_NONE());
+    mrb_define_class_method(mrb, curses, "mvwin", mrb_curses_cols, MRB_ARGS_NONE());
+    mrb_define_class_method(mrb, curses, "use_default_colors", mrb_curses_use_default_colors, MRB_ARGS_NONE());
+
     mrb_define_const(mrb, curses, "COLOR_BLACK",  mrb_fixnum_value(COLOR_BLACK));
     mrb_define_const(mrb, curses, "COLOR_RED",  mrb_fixnum_value(COLOR_RED));
     mrb_define_const(mrb, curses, "COLOR_GREEN",  mrb_fixnum_value(COLOR_GREEN));
@@ -457,6 +520,25 @@ void mrb_mruby_curses_gem_init(mrb_state *mrb)
     mrb_define_const(mrb, curses, "COLOR_MAGENTA",  mrb_fixnum_value(COLOR_MAGENTA));
     mrb_define_const(mrb, curses, "COLOR_CYAN",  mrb_fixnum_value(COLOR_CYAN));
     mrb_define_const(mrb, curses, "COLOR_WHITE",  mrb_fixnum_value(COLOR_WHITE));
+
+    mrb_define_const(mrb, curses, "A_ATTRIBUTES",  mrb_fixnum_value(A_ATTRIBUTES));
+    mrb_define_const(mrb, curses, "A_CHARTEXT",  mrb_fixnum_value(A_CHARTEXT));
+    mrb_define_const(mrb, curses, "A_COLOR",  mrb_fixnum_value(A_COLOR));
+    mrb_define_const(mrb, curses, "A_STANDOUT",  mrb_fixnum_value(A_STANDOUT));
+    mrb_define_const(mrb, curses, "A_UNDERLINE",  mrb_fixnum_value(A_UNDERLINE));
+    mrb_define_const(mrb, curses, "A_REVERSE",  mrb_fixnum_value(A_REVERSE));
+    mrb_define_const(mrb, curses, "A_BLINK",  mrb_fixnum_value(A_BLINK));
+    mrb_define_const(mrb, curses, "A_DIM",  mrb_fixnum_value(A_DIM));
+    mrb_define_const(mrb, curses, "A_BOLD",  mrb_fixnum_value(A_BOLD));
+    mrb_define_const(mrb, curses, "A_ALTCHARSET",  mrb_fixnum_value(A_ALTCHARSET));
+    mrb_define_const(mrb, curses, "A_INVIS",  mrb_fixnum_value(A_INVIS));
+    mrb_define_const(mrb, curses, "A_PROTECT",  mrb_fixnum_value(A_PROTECT));
+    mrb_define_const(mrb, curses, "A_HORIZONTAL",  mrb_fixnum_value(A_HORIZONTAL));
+    mrb_define_const(mrb, curses, "A_LEFT",  mrb_fixnum_value(A_LEFT));
+    mrb_define_const(mrb, curses, "A_LOW",  mrb_fixnum_value(A_LOW));
+    mrb_define_const(mrb, curses, "A_RIGHT",  mrb_fixnum_value(A_RIGHT));
+    mrb_define_const(mrb, curses, "A_TOP",  mrb_fixnum_value(A_TOP));
+    mrb_define_const(mrb, curses, "A_VERTICAL",  mrb_fixnum_value(A_VERTICAL));
 
     window = mrb_define_class_under(mrb, curses, "Window", mrb->object_class);
     MRB_SET_INSTANCE_TT(window, MRB_TT_DATA);
