@@ -33,6 +33,7 @@ static void mrb_curses_window_free(mrb_state *mrb, void *ptr) {
 
 WINDOW *echo_win = NULL;
 
+/*
 typedef struct {
   char *str;
   int len;
@@ -41,11 +42,13 @@ typedef struct {
 static const struct mrb_data_type mrb_curses_data_type = {
   "mrb_curses_data", mrb_free,
 };
+*/
 
 static const struct mrb_data_type mrb_curses_window_data_type = {
   "mrb_curses_window_data", mrb_curses_window_free,
 };
 
+/*
 static mrb_value mrb_curses_init(mrb_state *mrb, mrb_value self)
 {
   mrb_curses_data *data;
@@ -64,6 +67,7 @@ static mrb_value mrb_curses_init(mrb_state *mrb, mrb_value self)
 
   return self;
 }
+*/
 
 static mrb_value
 mrb_curses_initscr(mrb_state *mrb, mrb_value self)
@@ -162,13 +166,26 @@ mrb_curses_start_color(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_curses_init_pair(mrb_state *mrb, mrb_value self)
 {
-  mrb_value v1, v2, v3;
-  mrb_get_args(mrb, "iii", &v1, &v2, &v3);
-  int no = mrb_fixnum(v1);
-  int stcolor = mrb_fixnum(v2);
-  int bgcolor = mrb_fixnum(v3);
-  init_pair(no, stcolor, bgcolor);
-  return mrb_bool_value(true);
+  mrb_int pair, f, b;
+  mrb_get_args(mrb, "iii", &pair, &f, &b);
+  return mrb_fixnum_value(init_pair(pair, f, b));
+//  return mrb_bool_value(true);
+}
+
+static mrb_value
+mrb_curses_init_color(mrb_state *mrb, mrb_value self)
+{
+  mrb_int color, r, g, b;
+  mrb_int ret;
+  mrb_get_args(mrb, "iiii", &color, &r, &g, &b);
+
+  ret = init_color(color, r, g, b);
+  ret = init_color(1, 0, 0, 0);
+  if (ret == OK) {
+    return mrb_true_value();
+  } else {
+    return mrb_false_value();
+  }
 }
 
 static mrb_value
@@ -414,7 +431,7 @@ mrb_curses_window_addstr(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_curses_window_mvwin(mrb_state *mrb, mrb_value self)
 {
-  mrb_int ret, x, y;
+  mrb_int x, y;
   struct windata *winp = DATA_PTR(self);
 
   mrb_get_args(mrb, "ii", &y, &x);
@@ -455,7 +472,6 @@ static mrb_value
 mrb_curses_window_clear(mrb_state *mrb, mrb_value self)
 {
   struct windata *winp = DATA_PTR(self);
-  mrb_int attr;
 
   return mrb_fixnum_value(wclear(winp->window));
 }
@@ -464,7 +480,7 @@ static mrb_value
 mrb_curses_window_move(mrb_state *mrb, mrb_value self)
 {
   struct windata *winp = DATA_PTR(self);
-  mrb_int ret, x, y;
+  mrb_int x, y;
 
   mrb_get_args(mrb, "ii", &y, &x);
   return mrb_fixnum_value(wmove(winp->window, y, x));
@@ -476,11 +492,11 @@ void mrb_mruby_curses_gem_init(mrb_state *mrb)
     curses = mrb_define_class(mrb, "Curses", mrb->object_class);
     MRB_SET_INSTANCE_TT(curses, MRB_TT_DATA);
 
-    mrb_define_method(mrb, curses, "initialize", mrb_curses_init, MRB_ARGS_NONE());
+/*    mrb_define_method(mrb, curses, "initialize", mrb_curses_init, MRB_ARGS_NONE()); */
     mrb_define_class_method(mrb, curses, "initscr", mrb_curses_initscr, MRB_ARGS_NONE());
     mrb_define_class_method(mrb, curses, "cbreak", mrb_curses_cbreak, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "nocbreak", mrb_curses_cbreak, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "echo", mrb_curses_noecho, MRB_ARGS_NONE());
+    mrb_define_class_method(mrb, curses, "nocbreak", mrb_curses_nocbreak, MRB_ARGS_NONE());
+    mrb_define_class_method(mrb, curses, "echo", mrb_curses_echo, MRB_ARGS_NONE());
     mrb_define_class_method(mrb, curses, "noecho", mrb_curses_noecho, MRB_ARGS_NONE());
     mrb_define_class_method(mrb, curses, "keypad", mrb_curses_keypad, MRB_ARGS_ANY());
     mrb_define_class_method(mrb, curses, "clear", mrb_curses_clear, MRB_ARGS_NONE());
@@ -489,6 +505,7 @@ void mrb_mruby_curses_gem_init(mrb_state *mrb)
     mrb_define_class_method(mrb, curses, "endwin", mrb_curses_endwin, MRB_ARGS_NONE());
     mrb_define_class_method(mrb, curses, "start_color", mrb_curses_start_color, MRB_ARGS_NONE());
     mrb_define_class_method(mrb, curses, "init_pair", mrb_curses_init_pair, MRB_ARGS_ANY());
+    mrb_define_class_method(mrb, curses, "init_color", mrb_curses_init_color, MRB_ARGS_REQ(4));
     mrb_define_class_method(mrb, curses, "coloron", mrb_curses_coloron, MRB_ARGS_REQ(1));
     mrb_define_class_method(mrb, curses, "coloroff", mrb_curses_coloroff, MRB_ARGS_REQ(1));
     mrb_define_class_method(mrb, curses, "wbkgd", mrb_curses_wbkgd, MRB_ARGS_REQ(1));
@@ -539,6 +556,8 @@ void mrb_mruby_curses_gem_init(mrb_state *mrb)
     mrb_define_const(mrb, curses, "A_RIGHT",  mrb_fixnum_value(A_RIGHT));
     mrb_define_const(mrb, curses, "A_TOP",  mrb_fixnum_value(A_TOP));
     mrb_define_const(mrb, curses, "A_VERTICAL",  mrb_fixnum_value(A_VERTICAL));
+
+    mrb_define_const(mrb, curses, "COLORS",  mrb_fixnum_value(COLORS));
 
     window = mrb_define_class_under(mrb, curses, "Window", mrb->object_class);
     MRB_SET_INSTANCE_TT(window, MRB_TT_DATA);
