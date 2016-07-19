@@ -11,7 +11,11 @@
 #include "mruby/data.h"
 #include "mruby/string.h"
 #include "mrb_curses.h"
+#ifdef USE_PDCURSES
+#include <curses.h>
+#else
 #include <ncurses.h>
+#endif /* USE_PDCURSES */
 
 #define DONE mrb_gc_arena_restore(mrb, 0);
 
@@ -82,49 +86,49 @@ mrb_curses_initscr(mrb_state *mrb, mrb_value self)
   clear();
   // rb_stdscr = prep_window(cWindow, stdscr);
   // return rb_stdscr;
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
 mrb_curses_endwin(mrb_state *mrb, mrb_value self)
 {
   endwin();
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
 mrb_curses_cbreak(mrb_state *mrb, mrb_value self)
 {
   cbreak();
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
 mrb_curses_nocbreak(mrb_state *mrb, mrb_value self)
 {
   nocbreak();
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
 mrb_curses_echo(mrb_state *mrb, mrb_value self)
 {
   echo();
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
 mrb_curses_noecho(mrb_state *mrb, mrb_value self)
 {
   noecho();
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
 mrb_curses_clear(mrb_state *mrb, mrb_value self)
 {
   clear();
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
@@ -135,7 +139,7 @@ mrb_curses_addstr(mrb_state *mrb, mrb_value self)
   mrb_get_args(mrb, "S", &obj);
   const char *body = mrb_string_value_ptr(mrb, obj);
   addstr(body);
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
@@ -144,7 +148,7 @@ mrb_curses_keypad(mrb_state *mrb, mrb_value self)
   mrb_bool obj = TRUE;
   mrb_get_args(mrb, "|b", &obj);
   keypad(stdscr, obj);
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
@@ -153,14 +157,14 @@ mrb_curses_move(mrb_state *mrb, mrb_value self)
   mrb_value v1, v2;
   mrb_get_args(mrb, "ii", &v1, &v2);
   move(mrb_fixnum(v1), mrb_fixnum(v2));
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
 mrb_curses_start_color(mrb_state *mrb, mrb_value self)
 {
   start_color();
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
@@ -196,7 +200,7 @@ mrb_curses_coloron(mrb_state *mrb, mrb_value self)
   mrb_get_args(mrb, "i", &v1);
   int no = mrb_fixnum(v1);
   attron(COLOR_PAIR(no));
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
@@ -207,7 +211,7 @@ mrb_curses_coloroff(mrb_state *mrb, mrb_value self)
   mrb_get_args(mrb, "i", &v1);
   int no = mrb_fixnum(v1);
   attroff(COLOR_PAIR(no));
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
@@ -218,7 +222,7 @@ mrb_curses_wbkgd(mrb_state *mrb, mrb_value self)
   mrb_get_args(mrb, "i", &v1);
   int no = mrb_fixnum(v1);
   wbkgd(stdscr, COLOR_PAIR(no));
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
@@ -235,14 +239,14 @@ mrb_curses_echoline(mrb_state *mrb, mrb_value self)
     echo_win = subwin(stdscr, 1, 100, h, w);
   }
 
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
 mrb_curses_ewaddstr(mrb_state *mrb, mrb_value self)
 {
   if (echo_win == NULL) {
-    return mrb_bool_value(false);
+    return mrb_false_value();
   }
 
   mrb_value obj;
@@ -250,20 +254,21 @@ mrb_curses_ewaddstr(mrb_state *mrb, mrb_value self)
   const char *body = mrb_string_value_ptr(mrb, obj);
   waddstr(echo_win, body);
 
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
 mrb_curses_ewmove(mrb_state *mrb, mrb_value self)
 {
   if (echo_win == NULL) {
-    return mrb_bool_value(false);
+    return mrb_false_value();
+  return mrb_true_value();
   }
 
   mrb_value v1, v2;
   mrb_get_args(mrb, "ii", &v1, &v2);
   wmove(echo_win, mrb_fixnum(v1), mrb_fixnum(v2));
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
@@ -274,14 +279,14 @@ mrb_curses_refresh(mrb_state *mrb, mrb_value self)
     wrefresh(echo_win);
   }
 
-  return mrb_bool_value(true);
+  return mrb_true_value();
 }
 
 static mrb_value
 mrb_curses_ewgetstr(mrb_state *mrb, mrb_value self)
 {
   if (echo_win == NULL) {
-    return mrb_bool_value(false);
+    return mrb_false_value();
   }
 
   char str[100];
@@ -550,12 +555,14 @@ void mrb_mruby_curses_gem_init(mrb_state *mrb)
     mrb_define_const(mrb, curses, "A_ALTCHARSET",  mrb_fixnum_value(A_ALTCHARSET));
     mrb_define_const(mrb, curses, "A_INVIS",  mrb_fixnum_value(A_INVIS));
     mrb_define_const(mrb, curses, "A_PROTECT",  mrb_fixnum_value(A_PROTECT));
+#ifndef USE_PDCURSES
     mrb_define_const(mrb, curses, "A_HORIZONTAL",  mrb_fixnum_value(A_HORIZONTAL));
     mrb_define_const(mrb, curses, "A_LEFT",  mrb_fixnum_value(A_LEFT));
     mrb_define_const(mrb, curses, "A_LOW",  mrb_fixnum_value(A_LOW));
     mrb_define_const(mrb, curses, "A_RIGHT",  mrb_fixnum_value(A_RIGHT));
     mrb_define_const(mrb, curses, "A_TOP",  mrb_fixnum_value(A_TOP));
     mrb_define_const(mrb, curses, "A_VERTICAL",  mrb_fixnum_value(A_VERTICAL));
+#endif /* USE_PDCURSES */
 
     mrb_define_const(mrb, curses, "COLORS",  mrb_fixnum_value(COLORS));
 
