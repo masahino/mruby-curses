@@ -26,7 +26,7 @@ struct windata {
 };
 
 static void mrb_curses_window_free(mrb_state *mrb, void *ptr) {
-  struct windata *winp = ptr;
+  struct windata *winp = (struct windata *)ptr;
   fprintf(stderr, "curses_window_free %p (stdscr = %p\n", winp->window, stdscr);
   if (winp->window && winp->window != stdscr) {
     //    delwin(winp->window);
@@ -406,7 +406,7 @@ static mrb_value
 mrb_curses_window_resize(mrb_state *mrb, mrb_value self)
 {
   mrb_int lines, cols, ret;
-  struct windata *winp = DATA_PTR(self);
+  struct windata *winp = (struct windata *)DATA_PTR(self);
 
   mrb_get_args(mrb, "ii", &lines, &cols);
   ret = wresize(winp->window, lines, cols);
@@ -422,7 +422,7 @@ mrb_curses_window_addstr(mrb_state *mrb, mrb_value self)
 {
   mrb_int ret;
   char *str;
-  struct windata *winp = DATA_PTR(self);
+  struct windata *winp = (struct windata *)DATA_PTR(self);
 
   mrb_get_args(mrb, "z", &str);
   ret = waddstr(winp->window, str);
@@ -437,7 +437,7 @@ static mrb_value
 mrb_curses_window_mvwin(mrb_state *mrb, mrb_value self)
 {
   mrb_int x, y;
-  struct windata *winp = DATA_PTR(self);
+  struct windata *winp = (struct windata *)DATA_PTR(self);
 
   mrb_get_args(mrb, "ii", &y, &x);
   mvwin(winp->window, y, x);
@@ -447,7 +447,7 @@ mrb_curses_window_mvwin(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_curses_window_refresh(mrb_state *mrb, mrb_value self)
 {
-  struct windata *winp = DATA_PTR(self);
+  struct windata *winp = (struct windata *)DATA_PTR(self);
 
   wrefresh(winp->window);
   return mrb_nil_value();
@@ -456,7 +456,7 @@ mrb_curses_window_refresh(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_curses_window_attrset(mrb_state *mrb, mrb_value self)
 {
-  struct windata *winp = DATA_PTR(self);
+  struct windata *winp = (struct windata *)DATA_PTR(self);
   mrb_int attr;
 
   mrb_get_args(mrb, "i", &attr);
@@ -466,7 +466,7 @@ mrb_curses_window_attrset(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_curses_window_bkgd(mrb_state *mrb, mrb_value self)
 {
-  struct windata *winp = DATA_PTR(self);
+  struct windata *winp = (struct windata *)DATA_PTR(self);
   mrb_int attr;
 
   mrb_get_args(mrb, "i", &attr);
@@ -476,7 +476,7 @@ mrb_curses_window_bkgd(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_curses_window_clear(mrb_state *mrb, mrb_value self)
 {
-  struct windata *winp = DATA_PTR(self);
+  struct windata *winp = (struct windata *)DATA_PTR(self);
 
   return mrb_fixnum_value(wclear(winp->window));
 }
@@ -484,7 +484,7 @@ mrb_curses_window_clear(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_curses_window_move(mrb_state *mrb, mrb_value self)
 {
-  struct windata *winp = DATA_PTR(self);
+  struct windata *winp = (struct windata *)DATA_PTR(self);
   mrb_int x, y;
 
   mrb_get_args(mrb, "ii", &y, &x);
