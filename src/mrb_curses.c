@@ -385,6 +385,14 @@ mrb_curses_use_default_colors(mrb_state *mrb, mrb_value self)
 }
 
 static mrb_value
+mrb_curses_keyname(mrb_state *mrb, mrb_value self)
+{
+  mrb_int key;
+  mrb_get_args(mrb, "i", &key);
+  return mrb_str_new_cstr(mrb, keyname(key));
+}
+
+static mrb_value
 mrb_curses_window_init(mrb_state *mrb, mrb_value self)
 {
   mrb_int nlines, ncols, begin_y, begin_x;
@@ -491,94 +499,104 @@ mrb_curses_window_move(mrb_state *mrb, mrb_value self)
   return mrb_fixnum_value(wmove(winp->window, y, x));
 }
 
+static mrb_value
+mrb_curses_window_touchwin(mrb_state *mrb, mrb_value self)
+{
+  struct windata *winp = (struct windata *)DATA_PTR(self);
+
+  return mrb_fixnum_value(touchwin(winp->window));
+}
+
 void mrb_mruby_curses_gem_init(mrb_state *mrb)
 {
-    struct RClass *curses, *window;
-    curses = mrb_define_class(mrb, "Curses", mrb->object_class);
-    MRB_SET_INSTANCE_TT(curses, MRB_TT_DATA);
+  struct RClass *curses, *window;
+  curses = mrb_define_class(mrb, "Curses", mrb->object_class);
+  MRB_SET_INSTANCE_TT(curses, MRB_TT_DATA);
 
 /*    mrb_define_method(mrb, curses, "initialize", mrb_curses_init, MRB_ARGS_NONE()); */
-    mrb_define_class_method(mrb, curses, "initscr", mrb_curses_initscr, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "cbreak", mrb_curses_cbreak, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "nocbreak", mrb_curses_nocbreak, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "echo", mrb_curses_echo, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "noecho", mrb_curses_noecho, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "keypad", mrb_curses_keypad, MRB_ARGS_ANY());
-    mrb_define_class_method(mrb, curses, "clear", mrb_curses_clear, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "addstr", mrb_curses_addstr, MRB_ARGS_REQ(1));
-    mrb_define_class_method(mrb, curses, "move", mrb_curses_move, MRB_ARGS_ANY());
-    mrb_define_class_method(mrb, curses, "endwin", mrb_curses_endwin, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "start_color", mrb_curses_start_color, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "init_pair", mrb_curses_init_pair, MRB_ARGS_ANY());
-    mrb_define_class_method(mrb, curses, "init_color", mrb_curses_init_color, MRB_ARGS_REQ(4));
-    mrb_define_class_method(mrb, curses, "coloron", mrb_curses_coloron, MRB_ARGS_REQ(1));
-    mrb_define_class_method(mrb, curses, "coloroff", mrb_curses_coloroff, MRB_ARGS_REQ(1));
-    mrb_define_class_method(mrb, curses, "wbkgd", mrb_curses_wbkgd, MRB_ARGS_REQ(1));
+  mrb_define_class_method(mrb, curses, "initscr", mrb_curses_initscr, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "cbreak", mrb_curses_cbreak, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "nocbreak", mrb_curses_nocbreak, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "echo", mrb_curses_echo, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "noecho", mrb_curses_noecho, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "keypad", mrb_curses_keypad, MRB_ARGS_ANY());
+  mrb_define_class_method(mrb, curses, "clear", mrb_curses_clear, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "addstr", mrb_curses_addstr, MRB_ARGS_REQ(1));
+  mrb_define_class_method(mrb, curses, "move", mrb_curses_move, MRB_ARGS_ANY());
+  mrb_define_class_method(mrb, curses, "endwin", mrb_curses_endwin, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "start_color", mrb_curses_start_color, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "init_pair", mrb_curses_init_pair, MRB_ARGS_ANY());
+  mrb_define_class_method(mrb, curses, "init_color", mrb_curses_init_color, MRB_ARGS_REQ(4));
+  mrb_define_class_method(mrb, curses, "coloron", mrb_curses_coloron, MRB_ARGS_REQ(1));
+  mrb_define_class_method(mrb, curses, "coloroff", mrb_curses_coloroff, MRB_ARGS_REQ(1));
+  mrb_define_class_method(mrb, curses, "wbkgd", mrb_curses_wbkgd, MRB_ARGS_REQ(1));
 
-    mrb_define_class_method(mrb, curses, "echoline", mrb_curses_echoline, MRB_ARGS_ANY());
-    mrb_define_class_method(mrb, curses, "ewaddstr", mrb_curses_ewaddstr, MRB_ARGS_REQ(1));
-    mrb_define_class_method(mrb, curses, "ewmove", mrb_curses_ewmove, MRB_ARGS_ANY());
-    mrb_define_class_method(mrb, curses, "refresh", mrb_curses_refresh, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "ewgetstr", mrb_curses_ewgetstr, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "echoline", mrb_curses_echoline, MRB_ARGS_ANY());
+  mrb_define_class_method(mrb, curses, "ewaddstr", mrb_curses_ewaddstr, MRB_ARGS_REQ(1));
+  mrb_define_class_method(mrb, curses, "ewmove", mrb_curses_ewmove, MRB_ARGS_ANY());
+  mrb_define_class_method(mrb, curses, "refresh", mrb_curses_refresh, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "ewgetstr", mrb_curses_ewgetstr, MRB_ARGS_NONE());
 
-    mrb_define_class_method(mrb, curses, "screen_rows", mrb_curses_screen_rows, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "screen_cols", mrb_curses_screen_cols, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "screen_rows", mrb_curses_screen_rows, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "screen_cols", mrb_curses_screen_cols, MRB_ARGS_NONE());
 
-    mrb_define_class_method(mrb, curses, "raw", mrb_curses_raw, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "noraw", mrb_curses_noraw, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "getch", mrb_curses_getch, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "curs_set", mrb_curses_curs_set, MRB_ARGS_REQ(1));
-    mrb_define_class_method(mrb, curses, "stdscr", mrb_curses_stdscr, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "lines", mrb_curses_lines, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "cols", mrb_curses_cols, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "mvwin", mrb_curses_cols, MRB_ARGS_NONE());
-    mrb_define_class_method(mrb, curses, "use_default_colors", mrb_curses_use_default_colors, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "raw", mrb_curses_raw, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "noraw", mrb_curses_noraw, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "getch", mrb_curses_getch, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "curs_set", mrb_curses_curs_set, MRB_ARGS_REQ(1));
+  mrb_define_class_method(mrb, curses, "stdscr", mrb_curses_stdscr, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "lines", mrb_curses_lines, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "cols", mrb_curses_cols, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "mvwin", mrb_curses_cols, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "use_default_colors", mrb_curses_use_default_colors, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, curses, "keyname", mrb_curses_keyname, MRB_ARGS_REQ(1));
 
-    mrb_define_const(mrb, curses, "COLOR_BLACK",  mrb_fixnum_value(COLOR_BLACK));
-    mrb_define_const(mrb, curses, "COLOR_RED",  mrb_fixnum_value(COLOR_RED));
-    mrb_define_const(mrb, curses, "COLOR_GREEN",  mrb_fixnum_value(COLOR_GREEN));
-    mrb_define_const(mrb, curses, "COLOR_YELLOW",  mrb_fixnum_value(COLOR_YELLOW));
-    mrb_define_const(mrb, curses, "COLOR_BLUE",  mrb_fixnum_value(COLOR_BLUE));
-    mrb_define_const(mrb, curses, "COLOR_MAGENTA",  mrb_fixnum_value(COLOR_MAGENTA));
-    mrb_define_const(mrb, curses, "COLOR_CYAN",  mrb_fixnum_value(COLOR_CYAN));
-    mrb_define_const(mrb, curses, "COLOR_WHITE",  mrb_fixnum_value(COLOR_WHITE));
+  mrb_define_const(mrb, curses, "COLOR_BLACK",  mrb_fixnum_value(COLOR_BLACK));
+  mrb_define_const(mrb, curses, "COLOR_RED",  mrb_fixnum_value(COLOR_RED));
+  mrb_define_const(mrb, curses, "COLOR_GREEN",  mrb_fixnum_value(COLOR_GREEN));
+  mrb_define_const(mrb, curses, "COLOR_YELLOW",  mrb_fixnum_value(COLOR_YELLOW));
+  mrb_define_const(mrb, curses, "COLOR_BLUE",  mrb_fixnum_value(COLOR_BLUE));
+  mrb_define_const(mrb, curses, "COLOR_MAGENTA",  mrb_fixnum_value(COLOR_MAGENTA));
+  mrb_define_const(mrb, curses, "COLOR_CYAN",  mrb_fixnum_value(COLOR_CYAN));
+  mrb_define_const(mrb, curses, "COLOR_WHITE",  mrb_fixnum_value(COLOR_WHITE));
 
-    mrb_define_const(mrb, curses, "A_ATTRIBUTES",  mrb_fixnum_value(A_ATTRIBUTES));
-    mrb_define_const(mrb, curses, "A_CHARTEXT",  mrb_fixnum_value(A_CHARTEXT));
-    mrb_define_const(mrb, curses, "A_COLOR",  mrb_fixnum_value(A_COLOR));
-    mrb_define_const(mrb, curses, "A_STANDOUT",  mrb_fixnum_value(A_STANDOUT));
-    mrb_define_const(mrb, curses, "A_UNDERLINE",  mrb_fixnum_value(A_UNDERLINE));
-    mrb_define_const(mrb, curses, "A_REVERSE",  mrb_fixnum_value(A_REVERSE));
-    mrb_define_const(mrb, curses, "A_BLINK",  mrb_fixnum_value(A_BLINK));
-    mrb_define_const(mrb, curses, "A_DIM",  mrb_fixnum_value(A_DIM));
-    mrb_define_const(mrb, curses, "A_BOLD",  mrb_fixnum_value(A_BOLD));
-    mrb_define_const(mrb, curses, "A_ALTCHARSET",  mrb_fixnum_value(A_ALTCHARSET));
-    mrb_define_const(mrb, curses, "A_INVIS",  mrb_fixnum_value(A_INVIS));
-    mrb_define_const(mrb, curses, "A_PROTECT",  mrb_fixnum_value(A_PROTECT));
+  mrb_define_const(mrb, curses, "A_ATTRIBUTES",  mrb_fixnum_value(A_ATTRIBUTES));
+  mrb_define_const(mrb, curses, "A_CHARTEXT",  mrb_fixnum_value(A_CHARTEXT));
+  mrb_define_const(mrb, curses, "A_COLOR",  mrb_fixnum_value(A_COLOR));
+  mrb_define_const(mrb, curses, "A_STANDOUT",  mrb_fixnum_value(A_STANDOUT));
+  mrb_define_const(mrb, curses, "A_UNDERLINE",  mrb_fixnum_value(A_UNDERLINE));
+  mrb_define_const(mrb, curses, "A_REVERSE",  mrb_fixnum_value(A_REVERSE));
+  mrb_define_const(mrb, curses, "A_BLINK",  mrb_fixnum_value(A_BLINK));
+  mrb_define_const(mrb, curses, "A_DIM",  mrb_fixnum_value(A_DIM));
+  mrb_define_const(mrb, curses, "A_BOLD",  mrb_fixnum_value(A_BOLD));
+  mrb_define_const(mrb, curses, "A_ALTCHARSET",  mrb_fixnum_value(A_ALTCHARSET));
+  mrb_define_const(mrb, curses, "A_INVIS",  mrb_fixnum_value(A_INVIS));
+  mrb_define_const(mrb, curses, "A_PROTECT",  mrb_fixnum_value(A_PROTECT));
 #ifndef USE_PDCURSES
-    mrb_define_const(mrb, curses, "A_HORIZONTAL",  mrb_fixnum_value(A_HORIZONTAL));
-    mrb_define_const(mrb, curses, "A_LEFT",  mrb_fixnum_value(A_LEFT));
-    mrb_define_const(mrb, curses, "A_LOW",  mrb_fixnum_value(A_LOW));
-    mrb_define_const(mrb, curses, "A_RIGHT",  mrb_fixnum_value(A_RIGHT));
-    mrb_define_const(mrb, curses, "A_TOP",  mrb_fixnum_value(A_TOP));
-    mrb_define_const(mrb, curses, "A_VERTICAL",  mrb_fixnum_value(A_VERTICAL));
+  mrb_define_const(mrb, curses, "A_HORIZONTAL",  mrb_fixnum_value(A_HORIZONTAL));
+  mrb_define_const(mrb, curses, "A_LEFT",  mrb_fixnum_value(A_LEFT));
+  mrb_define_const(mrb, curses, "A_LOW",  mrb_fixnum_value(A_LOW));
+  mrb_define_const(mrb, curses, "A_RIGHT",  mrb_fixnum_value(A_RIGHT));
+  mrb_define_const(mrb, curses, "A_TOP",  mrb_fixnum_value(A_TOP));
+  mrb_define_const(mrb, curses, "A_VERTICAL",  mrb_fixnum_value(A_VERTICAL));
 #endif /* USE_PDCURSES */
 
-    mrb_define_const(mrb, curses, "COLORS",  mrb_fixnum_value(COLORS));
+  mrb_define_const(mrb, curses, "COLORS",  mrb_fixnum_value(COLORS));
 
-    window = mrb_define_class_under(mrb, curses, "Window", mrb->object_class);
-    MRB_SET_INSTANCE_TT(window, MRB_TT_DATA);
-    mrb_define_method(mrb, window, "initialize", mrb_curses_window_init, MRB_ARGS_REQ(4));
-    mrb_define_method(mrb, window, "resize", mrb_curses_window_resize, MRB_ARGS_REQ(2));
-    mrb_define_method(mrb, window, "addstr", mrb_curses_window_addstr, MRB_ARGS_REQ(1));
-    mrb_define_method(mrb, window, "mvwin", mrb_curses_window_mvwin, MRB_ARGS_REQ(2));
-    mrb_define_method(mrb, window, "refresh", mrb_curses_window_refresh, MRB_ARGS_NONE());
-    mrb_define_method(mrb, window, "attrset", mrb_curses_window_attrset, MRB_ARGS_REQ(1));
-    mrb_define_method(mrb, window, "bkgd", mrb_curses_window_bkgd, MRB_ARGS_REQ(1));
-    mrb_define_method(mrb, window, "clear", mrb_curses_window_clear, MRB_ARGS_NONE());
-    mrb_define_method(mrb, window, "move", mrb_curses_window_move, MRB_ARGS_REQ(2));
+  window = mrb_define_class_under(mrb, curses, "Window", mrb->object_class);
+  MRB_SET_INSTANCE_TT(window, MRB_TT_DATA);
+  mrb_define_method(mrb, window, "initialize", mrb_curses_window_init, MRB_ARGS_REQ(4));
+  mrb_define_method(mrb, window, "resize", mrb_curses_window_resize, MRB_ARGS_REQ(2));
+  mrb_define_method(mrb, window, "addstr", mrb_curses_window_addstr, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, window, "mvwin", mrb_curses_window_mvwin, MRB_ARGS_REQ(2));
+  mrb_define_method(mrb, window, "refresh", mrb_curses_window_refresh, MRB_ARGS_NONE());
+  mrb_define_method(mrb, window, "attrset", mrb_curses_window_attrset, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, window, "bkgd", mrb_curses_window_bkgd, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, window, "clear", mrb_curses_window_clear, MRB_ARGS_NONE());
+  mrb_define_method(mrb, window, "move", mrb_curses_window_move, MRB_ARGS_REQ(2));
+  mrb_define_method(mrb, window, "touchwin", mrb_curses_window_touchwin, MRB_ARGS_NONE());
 
-    DONE;
+  DONE;
 }
 
 void mrb_mruby_curses_gem_final(mrb_state *mrb)
